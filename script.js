@@ -36,21 +36,29 @@ const parallaxLayers = document.querySelectorAll("[data-parallax]");
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (parallaxLayers.length && !reduceMotion) {
   let frameRequested = false;
+  const updateParallax = () => {
+    parallaxLayers.forEach((layer) => {
+      const speed = Number(layer.dataset.parallax);
+      const bounds = layer.getBoundingClientRect();
+      const currentOffset = Number.parseFloat(layer.style.getPropertyValue("--parallax-y")) || 0;
+      const distanceFromCenter = bounds.top + bounds.height / 2 - window.innerHeight / 2 - currentOffset;
+      layer.style.setProperty("--parallax-y", `${-distanceFromCenter * speed}px`);
+      layer.style.setProperty("--parallax-rotate", `${distanceFromCenter * speed * 0.04}deg`);
+    });
+    frameRequested = false;
+  };
+
   window.addEventListener(
     "scroll",
     () => {
       if (frameRequested) return;
       frameRequested = true;
-      window.requestAnimationFrame(() => {
-        const offset = window.scrollY;
-        parallaxLayers.forEach((layer) => {
-          layer.style.transform = `translate3d(0, ${offset * Number(layer.dataset.parallax)}px, 0)`;
-        });
-        frameRequested = false;
-      });
+      window.requestAnimationFrame(updateParallax);
     },
     { passive: true },
   );
+  window.addEventListener("resize", updateParallax);
+  updateParallax();
 }
 
 document.querySelector("#year").textContent = new Date().getFullYear();
